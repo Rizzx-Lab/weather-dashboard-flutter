@@ -1,5 +1,4 @@
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 
 class LocationService {
   // Check if location services are enabled
@@ -7,22 +6,22 @@ class LocationService {
     return await Geolocator.isLocationServiceEnabled();
   }
 
-  // Check location permission
+  // Check location permissions
   Future<LocationPermission> checkPermission() async {
     return await Geolocator.checkPermission();
   }
 
-  // Request location permission
+  // Request location permissions
   Future<LocationPermission> requestPermission() async {
     return await Geolocator.requestPermission();
   }
 
   // Get current position
-  Future<Position> getCurrentPosition() async {
+  Future<Position?> getCurrentLocation() async {
     bool serviceEnabled = await isLocationServiceEnabled();
     
     if (!serviceEnabled) {
-      throw Exception('Location services are disabled');
+      return null;
     }
 
     LocationPermission permission = await checkPermission();
@@ -30,29 +29,33 @@ class LocationService {
     if (permission == LocationPermission.denied) {
       permission = await requestPermission();
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permissions are denied');
+        return null;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      throw Exception('Location permissions are permanently denied');
+      return null;
     }
 
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
+    try {
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      print('Error getting location: $e');
+      return null;
+    }
   }
 
-  // Get city name from coordinates
-  Future<String> getCityName(double lat, double lon) async {
-    try {
-      List<Placemark> placemarks = await placemarkFromCoordinates(lat, lon);
-      if (placemarks.isNotEmpty) {
-        return placemarks.first.locality ?? 'Unknown';
-      }
-      return 'Unknown';
-    } catch (e) {
-      return 'Unknown';
+  // Get coordinates as a formatted string
+  Future<Map<String, double>?> getCoordinates() async {
+    final position = await getCurrentLocation();
+    if (position != null) {
+      return {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+      };
     }
+    return null;
   }
 }
