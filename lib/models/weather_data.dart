@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 class WeatherData {
   final String cityName;
   final double temperature;
@@ -65,6 +66,8 @@ class WeatherData {
     );
   }
 
+  // ===================== HELPER METHODS UNTUK IMPROVED DETAILS =====================
+  
   String getWindDirection() {
     if (windDeg >= 337.5 || windDeg < 22.5) return 'N';
     if (windDeg >= 22.5 && windDeg < 67.5) return 'NE';
@@ -76,6 +79,59 @@ class WeatherData {
     return 'NW';
   }
 
+  String getWindDirectionText() {
+    if (windDeg >= 337.5 || windDeg < 22.5) return 'North';
+    if (windDeg >= 22.5 && windDeg < 67.5) return 'Northeast';
+    if (windDeg >= 67.5 && windDeg < 112.5) return 'East';
+    if (windDeg >= 112.5 && windDeg < 157.5) return 'Southeast';
+    if (windDeg >= 157.5 && windDeg < 202.5) return 'South';
+    if (windDeg >= 202.5 && windDeg < 247.5) return 'Southwest';
+    if (windDeg >= 247.5 && windDeg < 292.5) return 'West';
+    return 'Northwest';
+  }
+
+  String getHumidityLevel() {
+    if (humidity < 30) return 'Dry';
+    if (humidity < 60) return 'Comfortable';
+    if (humidity < 80) return 'Humid';
+    return 'Very Humid';
+  }
+
+  Color getHumidityColor() {
+    if (humidity < 30) return Colors.blue;
+    if (humidity < 60) return Colors.green;
+    if (humidity < 80) return Colors.orange;
+    return Colors.red;
+  }
+
+  String getCloudinessLevel() {
+    if (cloudiness < 20) return 'Clear';
+    if (cloudiness < 50) return 'Partly Cloudy';
+    if (cloudiness < 80) return 'Mostly Cloudy';
+    return 'Overcast';
+  }
+
+  Color getCloudinessColor() {
+    if (cloudiness < 20) return Colors.blue;
+    if (cloudiness < 50) return Colors.lightBlue;
+    if (cloudiness < 80) return Colors.grey;
+    return Colors.blueGrey;
+  }
+
+  String getPressureLevel() {
+    if (pressure < 1000) return 'Low';
+    if (pressure < 1015) return 'Normal';
+    if (pressure < 1030) return 'High';
+    return 'Very High';
+  }
+
+  Color getPressureColor() {
+    if (pressure < 1000) return Colors.red;
+    if (pressure < 1015) return Colors.green;
+    if (pressure < 1030) return Colors.orange;
+    return Colors.red;
+  }
+
   String getVisibilityText() {
     final km = visibility / 1000;
     if (km >= 10) return 'Excellent';
@@ -84,6 +140,114 @@ class WeatherData {
     if (km >= 1) return 'Poor';
     return 'Very Poor';
   }
+
+  Color getVisibilityColor() {
+    final km = visibility / 1000;
+    if (km >= 10) return Colors.green;
+    if (km >= 5) return Colors.lightGreen;
+    if (km >= 2) return Colors.orange;
+    if (km >= 1) return Colors.deepOrange;
+    return Colors.red;
+  }
+
+  double getVisibilityProgress() {
+    // Normalize visibility 0-10km to 0-1
+    return (visibility / 10000).clamp(0.0, 1.0);
+  }
+
+  String getWindLevel() {
+    if (windSpeed < 0.5) return 'Calm';
+    if (windSpeed < 1.6) return 'Light Air';
+    if (windSpeed < 3.4) return 'Light Breeze';
+    if (windSpeed < 5.5) return 'Gentle Breeze';
+    if (windSpeed < 8.0) return 'Moderate Breeze';
+    if (windSpeed < 10.8) return 'Fresh Breeze';
+    if (windSpeed < 13.9) return 'Strong Breeze';
+    return 'High Wind';
+  }
+
+  Color getWindColor() {
+    if (windSpeed < 0.5) return Colors.green;
+    if (windSpeed < 1.6) return Colors.lightGreen;
+    if (windSpeed < 3.4) return Colors.yellow;
+    if (windSpeed < 5.5) return Colors.orange;
+    if (windSpeed < 8.0) return Colors.deepOrange;
+    if (windSpeed < 10.8) return Colors.red;
+    if (windSpeed < 13.9) return Colors.red.shade900;
+    return Colors.purple;
+  }
+
+  double getHumidityProgress() {
+    return humidity / 100.0;
+  }
+
+  double getCloudinessProgress() {
+    return cloudiness / 100.0;
+  }
+
+  double getPressureProgress() {
+    // Normalize pressure 970-1030 hPa to 0-1
+    return ((pressure - 970) / 60).clamp(0.0, 1.0);
+  }
+
+  String getSunStatus() {
+    final now = DateTime.now();
+    if (now.isBefore(sunrise)) {
+      return 'Sunrise in ${sunrise.difference(now).inHours}h';
+    } else if (now.isBefore(sunset)) {
+      return 'Daylight';
+    } else {
+      return 'Night';
+    }
+  }
+
+  bool getIsDayTime() {
+    final now = DateTime.now();
+    return now.isAfter(sunrise) && now.isBefore(sunset);
+  }
+
+  Duration getDaylightDuration() {
+    return sunset.difference(sunrise);
+  }
+
+  String getDaylightDurationText() {
+    final duration = getDaylightDuration();
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    return '${hours}h ${minutes}m';
+  }
+
+  String getFormattedSunrise() {
+    return '${sunrise.hour.toString().padLeft(2, '0')}:${sunrise.minute.toString().padLeft(2, '0')}';
+  }
+
+  String getFormattedSunset() {
+    return '${sunset.hour.toString().padLeft(2, '0')}:${sunset.minute.toString().padLeft(2, '0')}';
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'cityName': cityName,
+      'temperature': temperature,
+      'feelsLike': feelsLike,
+      'tempMin': tempMin,
+      'tempMax': tempMax,
+      'humidity': humidity,
+      'pressure': pressure,
+      'windSpeed': windSpeed,
+      'windDeg': windDeg,
+      'description': description,
+      'icon': icon,
+      'cloudiness': cloudiness,
+      'visibility': visibility,
+      'sunrise': sunrise.millisecondsSinceEpoch,
+      'sunset': sunset.millisecondsSinceEpoch,
+      'lat': lat,
+      'lon': lon,
+    };
+  }
+
+  // ===================== END HELPER METHODS =====================
 }
 
 class HourlyForecast {
@@ -116,6 +280,18 @@ class HourlyForecast {
       pop: ((json['pop'] ?? 0) * 100).toInt(),
     );
   }
+
+  // Helper untuk HourlyForecast
+  String getFormattedTime() {
+    return '${time.hour.toString().padLeft(2, '0')}:00';
+  }
+
+  String getPopText() {
+    if (pop < 20) return '';
+    if (pop < 50) return 'Light Rain';
+    if (pop < 80) return 'Rain';
+    return 'Heavy Rain';
+  }
 }
 
 class DailyForecast {
@@ -138,6 +314,26 @@ class DailyForecast {
     required this.windSpeed,
     required this.pop,
   });
+
+  // Helper untuk DailyForecast
+  String getDayName() {
+    final now = DateTime.now();
+    if (date.day == now.day) return 'Today';
+    if (date.day == now.day + 1) return 'Tomorrow';
+    final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[date.weekday - 1];
+  }
+
+  String getFormattedDate() {
+    return '${date.month}/${date.day}';
+  }
+
+  String getPopText() {
+    if (pop < 20) return 'No Rain';
+    if (pop < 50) return 'Chance of Rain';
+    if (pop < 80) return 'Rain Expected';
+    return 'Heavy Rain';
+  }
 }
 
 class AirQuality {
@@ -202,6 +398,45 @@ class AirQuality {
         return 'Unknown air quality';
     }
   }
+
+  Color getAQIColor() {
+    switch (aqi) {
+      case 1:
+        return Colors.green;
+      case 2:
+        return Colors.lightGreen;
+      case 3:
+        return Colors.yellow;
+      case 4:
+        return Colors.orange;
+      case 5:
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String getDominantPollutant() {
+    final pollutants = {
+      'PM2.5': pm2_5,
+      'PM10': pm10,
+      'O₃': o3,
+      'NO₂': no2,
+      'CO': co,
+    };
+    
+    var dominant = '';
+    var maxValue = 0.0;
+    
+    pollutants.forEach((key, value) {
+      if (value > maxValue) {
+        maxValue = value;
+        dominant = key;
+      }
+    });
+    
+    return dominant;
+  }
 }
 
 class SavedLocation {
@@ -233,5 +468,9 @@ class SavedLocation {
       lon: json['lon'],
       country: json['country'],
     );
+  }
+
+  String getCoordinates() {
+    return '${lat.toStringAsFixed(4)}, ${lon.toStringAsFixed(4)}';
   }
 }

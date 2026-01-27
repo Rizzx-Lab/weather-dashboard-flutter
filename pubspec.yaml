@@ -35,6 +35,13 @@ dependencies:
   
   # Date & Time Formatting
   intl: ^0.19.0
+  
+  # Animations - HAPUS LOTTIE DULU
+  animations: ^2.0.7
+  # lottie: ^3.1.0  # HAPUS DULU
+  
+  # Haptic Feedback - HAPUS DULU
+  # vibration: ^2.0.0  # HAPUS DULU
 
 dev_dependencies:
   flutter_test:
@@ -46,3 +53,4 @@ flutter:
   
   assets:
     - .env
+    # HAPUS assets/lottie/ DULU

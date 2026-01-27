@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../models/weather_data.dart';
 import '../services/weather_service.dart';
 import '../services/location_service.dart';
 import '../services/storage_service.dart';
-import '../widgets/weather_icon.dart';
+import '../widgets/modern/interactive_weather_card.dart';
+import '../widgets/modern/weather_hero_section.dart';
+import '../widgets/animations/fade_in_widget.dart';
+import '../widgets/animations/shimmer_loading.dart';
 import '../widgets/hourly_forecast_card.dart';
 import '../widgets/daily_forecast_card.dart';
-import '../widgets/weather_detail_card.dart';
 import '../widgets/air_quality_card.dart';
+import '../widgets/weather_map_card.dart';
+import '../widgets/improved_weather_details.dart'; // IMPORT BARU
+import '../theme/weather_gradients.dart';
 import 'search_screen.dart';
-import 'map_screen.dart';
 import 'saved_locations_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -20,7 +25,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final WeatherService _weatherService = WeatherService();
   final LocationService _locationService = LocationService();
   final StorageService _storageService = StorageService();
@@ -30,14 +35,29 @@ class _HomeScreenState extends State<HomeScreen> {
   List<DailyForecast> _dailyForecast = [];
   AirQuality? _airQuality;
   bool _isLoading = true;
+  bool _isRefreshing = false;
   String _errorMessage = '';
   bool _isDarkMode = false;
+
+  late AnimationController _refreshController;
 
   @override
   void initState() {
     super.initState();
+    
+    _refreshController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+
     _loadDarkMode();
     _loadWeather();
+  }
+
+  @override
+  void dispose() {
+    _refreshController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDarkMode() async {
@@ -47,14 +67,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  Future<void> _loadWeather() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  Future<void> _loadWeather({bool showRefresh = false}) async {
+    if (showRefresh) {
+      setState(() {
+        _isRefreshing = true;
+      });
+    } else {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+      });
+    }
 
     try {
-      // Try to get current location
       final position = await _locationService.getCurrentLocation();
       
       double lat, lon;
@@ -64,36 +89,41 @@ class _HomeScreenState extends State<HomeScreen> {
         lon = position.longitude;
         await _storageService.saveLastLocation(lat, lon);
       } else {
-        // Try to load last location
         final lastLoc = await _storageService.getLastLocation();
         if (lastLoc != null) {
           lat = lastLoc['lat']!;
           lon = lastLoc['lon']!;
         } else {
-          // Default to Surabaya if no location available
           lat = -7.2575;
           lon = 112.7521;
         }
       }
 
-      // Load all weather data
-      final weather = await _weatherService.getCurrentWeather(lat, lon);
-      final hourly = await _weatherService.getHourlyForecast(lat, lon);
-      final daily = await _weatherService.getDailyForecast(lat, lon);
-      final airQuality = await _weatherService.getAirQuality(lat, lon);
+      final results = await Future.wait([
+        _weatherService.getCurrentWeather(lat, lon),
+        _weatherService.getHourlyForecast(lat, lon),
+        _weatherService.getDailyForecast(lat, lon),
+        _weatherService.getAirQuality(lat, lon),
+      ]);
 
       setState(() {
-        _currentWeather = weather;
-        _hourlyForecast = hourly;
-        _dailyForecast = daily;
-        _airQuality = airQuality;
+        _currentWeather = results[0] as WeatherData;
+        _hourlyForecast = results[1] as List<HourlyForecast>;
+        _dailyForecast = results[2] as List<DailyForecast>;
+        _airQuality = results[3] as AirQuality?;
         _isLoading = false;
+        _isRefreshing = false;
       });
+
+      HapticFeedback.lightImpact();
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load weather data: $e';
+        _errorMessage = 'Failed to load weather data: ${e.toString()}';
         _isLoading = false;
+        _isRefreshing = false;
       });
+      
+      HapticFeedback.mediumImpact();
     }
   }
 
@@ -103,29 +133,35 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      final weather = await _weatherService.getCurrentWeather(lat, lon);
-      final hourly = await _weatherService.getHourlyForecast(lat, lon);
-      final daily = await _weatherService.getDailyForecast(lat, lon);
-      final airQuality = await _weatherService.getAirQuality(lat, lon);
+      final results = await Future.wait([
+        _weatherService.getCurrentWeather(lat, lon),
+        _weatherService.getHourlyForecast(lat, lon),
+        _weatherService.getDailyForecast(lat, lon),
+        _weatherService.getAirQuality(lat, lon),
+      ]);
 
       await _storageService.saveLastLocation(lat, lon);
 
       setState(() {
-        _currentWeather = weather;
-        _hourlyForecast = hourly;
-        _dailyForecast = daily;
-        _airQuality = airQuality;
+        _currentWeather = results[0] as WeatherData;
+        _hourlyForecast = results[1] as List<HourlyForecast>;
+        _dailyForecast = results[2] as List<DailyForecast>;
+        _airQuality = results[3] as AirQuality?;
         _isLoading = false;
       });
+
+      HapticFeedback.lightImpact();
     } catch (e) {
       setState(() {
         _errorMessage = 'Failed to load weather data';
         _isLoading = false;
       });
+      HapticFeedback.mediumImpact();
     }
   }
 
   void _toggleDarkMode() async {
+    HapticFeedback.lightImpact();
     setState(() {
       _isDarkMode = !_isDarkMode;
     });
@@ -135,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _toggleFavorite() async {
     if (_currentWeather == null) return;
 
+    HapticFeedback.lightImpact();
     final isSaved = await _storageService.isLocationSaved(
       _currentWeather!.lat,
       _currentWeather!.lon,
@@ -148,7 +185,13 @@ class _HomeScreenState extends State<HomeScreen> {
         country: '',
       ));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location removed from favorites')),
+        SnackBar(
+          content: const Text('Location removed from favorites'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     } else {
       await _storageService.addLocation(SavedLocation(
@@ -158,438 +201,621 @@ class _HomeScreenState extends State<HomeScreen> {
         country: '',
       ));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Location added to favorites')),
+        SnackBar(
+          content: const Text('Location added to favorites'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       );
     }
     setState(() {});
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = _isDarkMode;
-    final bgColor = isDark ? const Color(0xFF1E1E1E) : const Color(0xFF87CEEB);
-    final cardColor = isDark ? const Color(0xFF2D2D2D) : Colors.white;
-    final textColor = isDark ? Colors.white : Colors.black87;
-
+  Widget _buildLoadingScreen() {
+    final bgColor = _isDarkMode ? const Color(0xFF121212) : const Color(0xFF87CEEB);
+    
     return Scaffold(
       backgroundColor: bgColor,
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
-          : _errorMessage.isNotEmpty
-              ? _buildErrorWidget()
-              : RefreshIndicator(
-                  onRefresh: _loadWeather,
-                  color: Colors.white,
-                  child: CustomScrollView(
-                    slivers: [
-                      _buildAppBar(isDark, textColor),
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildCurrentWeather(isDark, cardColor, textColor),
-                              const SizedBox(height: 24),
-                              _buildAirQuality(cardColor, textColor),
-                              const SizedBox(height: 24),
-                              _buildHourlyForecast(cardColor, textColor),
-                              const SizedBox(height: 24),
-                              _buildDailyForecast(cardColor, textColor),
-                              const SizedBox(height: 24),
-                              _buildWeatherDetails(cardColor, textColor),
-                              const SizedBox(height: 250),
-                            ],
-                          ),
-                        ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ShimmerLoading(
+                        width: 200,
+                        height: 32,
+                        borderRadius: BorderRadius.circular(8),
+                        baseColor: Colors.white.withOpacity(0.2),
+                        highlightColor: Colors.white.withOpacity(0.4),
+                      ),
+                      const SizedBox(height: 8),
+                      ShimmerLoading(
+                        width: 150,
+                        height: 16,
+                        borderRadius: BorderRadius.circular(4),
+                        baseColor: Colors.white.withOpacity(0.2),
+                        highlightColor: Colors.white.withOpacity(0.4),
                       ),
                     ],
                   ),
+                  Row(
+                    children: [
+                      ShimmerLoading(
+                        width: 40,
+                        height: 40,
+                        borderRadius: BorderRadius.circular(20),
+                        baseColor: Colors.white.withOpacity(0.2),
+                        highlightColor: Colors.white.withOpacity(0.4),
+                      ),
+                      const SizedBox(width: 12),
+                      ShimmerLoading(
+                        width: 40,
+                        height: 40,
+                        borderRadius: BorderRadius.circular(20),
+                        baseColor: Colors.white.withOpacity(0.2),
+                        highlightColor: Colors.white.withOpacity(0.4),
+                      ),
+                      const SizedBox(width: 12),
+                      ShimmerLoading(
+                        width: 40,
+                        height: 40,
+                        borderRadius: BorderRadius.circular(20),
+                        baseColor: Colors.white.withOpacity(0.2),
+                        highlightColor: Colors.white.withOpacity(0.4),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 40),
+
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white.withOpacity(0.1),
+                      Colors.white.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
                 ),
-      floatingActionButton: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          FloatingActionButton(
-            heroTag: 'map',
-            onPressed: () {
-              if (_currentWeather != null) {
-                Navigator.push(
+                child: Row(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ShimmerLoading(
+                          width: 120,
+                          height: 48,
+                          borderRadius: BorderRadius.circular(8),
+                          baseColor: Colors.white.withOpacity(0.2),
+                          highlightColor: Colors.white.withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 12),
+                        ShimmerLoading(
+                          width: 180,
+                          height: 24,
+                          borderRadius: BorderRadius.circular(4),
+                          baseColor: Colors.white.withOpacity(0.2),
+                          highlightColor: Colors.white.withOpacity(0.4),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    ShimmerLoading(
+                      width: 100,
+                      height: 100,
+                      borderRadius: BorderRadius.circular(50),
+                      baseColor: Colors.white.withOpacity(0.2),
+                      highlightColor: Colors.white.withOpacity(0.4),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              Expanded(
+                child: ListView(
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ShimmerLoading(
+                          width: 150,
+                          height: 24,
+                          borderRadius: BorderRadius.circular(4),
+                          baseColor: Colors.white.withOpacity(0.2),
+                          highlightColor: Colors.white.withOpacity(0.4),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 140,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: 5,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                width: 100,
+                                margin: EdgeInsets.only(
+                                  right: index == 4 ? 0 : 12,
+                                ),
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    ShimmerLoading(
+                                      width: 60,
+                                      height: 16,
+                                      borderRadius: BorderRadius.circular(4),
+                                      baseColor: Colors.white.withOpacity(0.2),
+                                      highlightColor: Colors.white.withOpacity(0.4),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ShimmerLoading(
+                                      width: 40,
+                                      height: 40,
+                                      borderRadius: BorderRadius.circular(20),
+                                      baseColor: Colors.white.withOpacity(0.2),
+                                      highlightColor: Colors.white.withOpacity(0.4),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    ShimmerLoading(
+                                      width: 40,
+                                      height: 24,
+                                      borderRadius: BorderRadius.circular(4),
+                                      baseColor: Colors.white.withOpacity(0.2),
+                                      highlightColor: Colors.white.withOpacity(0.4),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return _buildLoadingScreen();
+    }
+
+    final bgColor = _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F7FA);
+    final textColor = _isDarkMode ? Colors.white : Colors.black87;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _isDarkMode 
+          ? SystemUiOverlayStyle.light.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: const Color(0xFF121212),
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: const Color(0xFFF5F7FA),
+            ),
+      child: Scaffold(
+        backgroundColor: bgColor,
+        extendBody: true,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          foregroundColor: textColor,
+          title: Text(
+            _currentWeather?.cityName ?? 'Weather Dashboard',
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                _isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                color: textColor,
+              ),
+              onPressed: _toggleDarkMode,
+            ),
+            IconButton(
+              icon: Icon(Icons.bookmarks, color: textColor),
+              onPressed: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MapScreen(
-                      lat: _currentWeather!.lat,
-                      lon: _currentWeather!.lon,
-                    ),
+                    builder: (context) => const SavedLocationsScreen(),
                   ),
                 );
-              }
-            },
-            backgroundColor: Colors.white,
-            child: const Icon(Icons.map, color: Colors.blue),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton(
-            heroTag: 'favorite',
-            onPressed: _toggleFavorite,
-            backgroundColor: Colors.white,
-            child: FutureBuilder<bool>(
-              future: _currentWeather != null
-                  ? _storageService.isLocationSaved(
-                      _currentWeather!.lat, _currentWeather!.lon)
-                  : Future.value(false),
-              builder: (context, snapshot) {
-                final isSaved = snapshot.data ?? false;
-                return Icon(
-                  isSaved ? Icons.favorite : Icons.favorite_border,
-                  color: Colors.red,
-                );
+                if (result != null && result is SavedLocation) {
+                  _loadWeatherForLocation(result.lat, result.lon);
+                }
               },
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppBar(bool isDark, Color textColor) {
-    return SliverAppBar(
-      expandedHeight: 120,
-      floating: false,
-      pinned: true,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          _currentWeather?.cityName ?? 'Weather Dashboard',
-          style: TextStyle(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      actions: [
-        IconButton(
-          icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: textColor),
-          onPressed: _toggleDarkMode,
-        ),
-        IconButton(
-          icon: Icon(Icons.bookmarks, color: textColor),
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SavedLocationsScreen(),
-              ),
-            );
-            if (result != null && result is SavedLocation) {
-              _loadWeatherForLocation(result.lat, result.lon);
-            }
-          },
-        ),
-        IconButton(
-          icon: Icon(Icons.search, color: textColor),
-          onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const SearchScreen(),
-              ),
-            );
-            if (result != null && result is SavedLocation) {
-              _loadWeatherForLocation(result.lat, result.lon);
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCurrentWeather(bool isDark, Color cardColor, Color textColor) {
-    if (_currentWeather == null) return const SizedBox();
-
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF2D2D2D), const Color(0xFF1E1E1E)]
-              : [const Color(0xFF87CEEB), const Color(0xFF4A90E2)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            DateFormat('EEEE, MMM d').format(DateTime.now()),
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
-              fontSize: 16,
+            IconButton(
+              icon: Icon(Icons.search, color: textColor),
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const SearchScreen(),
+                  ),
+                );
+                if (result != null && result is SavedLocation) {
+                  _loadWeatherForLocation(result.lat, result.lon);
+                }
+              },
             ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${_currentWeather!.temperature.round()}°C',
-                      style: const TextStyle(
-                        fontSize: 64,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+          ],
+        ),
+        body: _errorMessage.isNotEmpty
+            ? _buildErrorWidget()
+            : RefreshIndicator(
+                onRefresh: () => _loadWeather(showRefresh: true),
+                color: _isDarkMode ? const Color(0xFF1976D2) : Colors.white,
+                backgroundColor: _isDarkMode ? const Color(0xFF2D2D2D) : const Color(0xFF1976D2),
+                displacement: 60,
+                strokeWidth: 3,
+                notificationPredicate: (notification) {
+                  return notification.depth == 0;
+                },
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    if (_currentWeather != null)
+                      SliverToBoxAdapter(
+                        child: WeatherHeroSection(
+                          cityName: _currentWeather!.cityName,
+                          temperature: _currentWeather!.temperature,
+                          description: _currentWeather!.description,
+                          icon: _currentWeather!.icon,
+                          isDarkMode: _isDarkMode,
+                        ),
+                      )
+                    else
+                      SliverToBoxAdapter(
+                        child: Container(
+                          height: 300,
+                          decoration: BoxDecoration(
+                            gradient: WeatherGradients.getGradientByCondition('clear', _isDarkMode),
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(30),
+                              bottomRight: Radius.circular(30),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      _currentWeather!.description.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Feels like ${_currentWeather!.feelsLike.round()}°C',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          if (_airQuality != null)
+                            FadeInWidget(
+                              delay: const Duration(milliseconds: 100),
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 20),
+                                child: InteractiveWeatherCard(
+                                  backgroundColor: _isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
+                                  enableHapticFeedback: true,
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                  },
+                                  child: AirQualityCard(
+                                    airQuality: _airQuality!,
+                                    cardColor: Colors.transparent,
+                                    textColor: textColor,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                          // Hourly Forecast
+                          FadeInWidget(
+                            delay: const Duration(milliseconds: 200),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12, left: 4),
+                                  child: Text(
+                                    'Hourly Forecast',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 150,
+                                  child: ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: _hourlyForecast.length,
+                                    itemBuilder: (context, index) {
+                                      return FadeInWidget(
+                                        delay: Duration(milliseconds: 300 + (index * 50)),
+                                        child: Padding(
+                                          padding: EdgeInsets.only(
+                                            right: index == _hourlyForecast.length - 1 ? 0 : 12,
+                                            left: index == 0 ? 4 : 0,
+                                          ),
+                                          child: InteractiveWeatherCard(
+                                            backgroundColor: _isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
+                                            enableHapticFeedback: true,
+                                            onTap: () {
+                                              HapticFeedback.lightImpact();
+                                            },
+                                            child: HourlyForecastCard(
+                                              forecast: _hourlyForecast[index],
+                                              cardColor: Colors.transparent,
+                                              textColor: textColor,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Daily Forecast
+                          FadeInWidget(
+                            delay: const Duration(milliseconds: 400),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12, left: 4),
+                                  child: Text(
+                                    '5-Day Forecast',
+                                    style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w700,
+                                      color: textColor,
+                                    ),
+                                  ),
+                                ),
+                                ..._dailyForecast.asMap().entries.map((entry) {
+                                  final index = entry.key;
+                                  final forecast = entry.value;
+                                  return FadeInWidget(
+                                    delay: Duration(milliseconds: 500 + (index * 100)),
+                                    child: Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: InteractiveWeatherCard(
+                                        backgroundColor: _isDarkMode ? const Color(0xFF2D2D2D) : Colors.white,
+                                        enableHapticFeedback: true,
+                                        onTap: () {
+                                          HapticFeedback.lightImpact();
+                                        },
+                                        child: DailyForecastCard(
+                                          forecast: forecast,
+                                          cardColor: Colors.transparent,
+                                          textColor: textColor,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 28),
+
+                          // Weather Map Card
+                          if (_currentWeather != null)
+                            FadeInWidget(
+                              delay: const Duration(milliseconds: 600),
+                              child: WeatherMapCard(
+                                lat: _currentWeather!.lat,
+                                lon: _currentWeather!.lon,
+                                isDarkMode: _isDarkMode,
+                              ),
+                            ),
+
+                          const SizedBox(height: 28),
+
+                          // IMPROVED WEATHER DETAILS - YANG BARU
+                          if (_currentWeather != null)
+                            FadeInWidget(
+                              delay: const Duration(milliseconds: 700),
+                              child: ImprovedWeatherDetails(
+                                weather: _currentWeather!,
+                                isDarkMode: _isDarkMode,
+                              ),
+                            ),
+
+                          const SizedBox(height: 32),
+                        ]),
                       ),
                     ),
                   ],
                 ),
               ),
-              WeatherIcon(
-                icon: _currentWeather!.icon,
-                size: 120,
+        floatingActionButton: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            const SizedBox(height: 16),
+
+            // Favorite Button
+            FadeInWidget(
+              delay: const Duration(milliseconds: 850),
+              child: FloatingActionButton(
+                heroTag: 'favorite',
+                onPressed: _toggleFavorite,
+                backgroundColor: _isDarkMode ? const Color(0xFF1565C0) : Colors.white,
+                foregroundColor: Colors.red,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: FutureBuilder<bool>(
+                  future: _currentWeather != null
+                      ? _storageService.isLocationSaved(
+                          _currentWeather!.lat, _currentWeather!.lon)
+                      : Future.value(false),
+                  builder: (context, snapshot) {
+                    final isSaved = snapshot.data ?? false;
+                    return Icon(
+                      isSaved ? Icons.favorite : Icons.favorite_border,
+                      size: 24,
+                    );
+                  },
+                ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildWeatherStat(
-                Icons.arrow_upward,
-                '${_currentWeather!.tempMax.round()}°',
-                'High',
+            ),
+
+            const SizedBox(height: 16),
+
+            // Current Location Button
+            FadeInWidget(
+              delay: const Duration(milliseconds: 900),
+              child: FloatingActionButton(
+                heroTag: 'refresh',
+                onPressed: () => _loadWeather(showRefresh: true),
+                backgroundColor: _isDarkMode ? const Color(0xFF1565C0) : Colors.white,
+                foregroundColor: _isDarkMode ? Colors.white : const Color(0xFF1976D2),
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: AnimatedBuilder(
+                  animation: _refreshController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _isRefreshing ? _refreshController.value * 6.28 : 0,
+                      child: Icon(
+                        _isRefreshing ? Icons.refresh : Icons.my_location,
+                        size: 24,
+                      ),
+                    );
+                  },
+                ),
               ),
-              _buildWeatherStat(
-                Icons.arrow_downward,
-                '${_currentWeather!.tempMin.round()}°',
-                'Low',
-              ),
-              _buildWeatherStat(
-                Icons.water_drop,
-                '${_currentWeather!.humidity}%',
-                'Humidity',
-              ),
-              _buildWeatherStat(
-                Icons.air,
-                '${_currentWeather!.windSpeed.toStringAsFixed(1)} m/s',
-                'Wind',
-              ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildWeatherStat(IconData icon, String value, String label) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.white.withOpacity(0.8), size: 24),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
-            fontSize: 12,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAirQuality(Color cardColor, Color textColor) {
-    if (_airQuality == null) return const SizedBox();
-
-    return AirQualityCard(
-      airQuality: _airQuality!,
-      cardColor: cardColor,
-      textColor: textColor,
-    );
-  }
-
-  Widget _buildHourlyForecast(Color cardColor, Color textColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Hourly Forecast',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 140,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: _hourlyForecast.length,
-            itemBuilder: (context, index) {
-              return HourlyForecastCard(
-                forecast: _hourlyForecast[index],
-                cardColor: cardColor,
-                textColor: textColor,
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDailyForecast(Color cardColor, Color textColor) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '5-Day Forecast',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ..._dailyForecast.map((forecast) {
-          return DailyForecastCard(
-            forecast: forecast,
-            cardColor: cardColor,
-            textColor: textColor,
-          );
-        }),
-      ],
-    );
-  }
-
-  Widget _buildWeatherDetails(Color cardColor, Color textColor) {
-    if (_currentWeather == null) return const SizedBox();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Weather Details',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        ),
-        const SizedBox(height: 12),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 1.5,
-          children: [
-            WeatherDetailCard(
-              icon: Icons.compress,
-              title: 'Pressure',
-              value: '${_currentWeather!.pressure} hPa',
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-            WeatherDetailCard(
-              icon: Icons.visibility,
-              title: 'Visibility',
-              value: '${(_currentWeather!.visibility / 1000).toStringAsFixed(1)} km',
-              subtitle: _currentWeather!.getVisibilityText(),
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-            WeatherDetailCard(
-              icon: Icons.explore,
-              title: 'Wind Direction',
-              value: _currentWeather!.getWindDirection(),
-              subtitle: '${_currentWeather!.windDeg}°',
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-            WeatherDetailCard(
-              icon: Icons.cloud,
-              title: 'Cloudiness',
-              value: '${_currentWeather!.cloudiness}%',
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-            WeatherDetailCard(
-              icon: Icons.wb_sunny,
-              title: 'Sunrise',
-              value: DateFormat('HH:mm').format(_currentWeather!.sunrise),
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-            WeatherDetailCard(
-              icon: Icons.nights_stay,
-              title: 'Sunset',
-              value: DateFormat('HH:mm').format(_currentWeather!.sunset),
-              cardColor: cardColor,
-              textColor: textColor,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
   Widget _buildErrorWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.white),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Text(
-              _errorMessage,
-              style: const TextStyle(color: Colors.white),
-              textAlign: TextAlign.center,
-            ),
+    final bgColor = _isDarkMode ? const Color(0xFF121212) : const Color(0xFFF5F7FA);
+    final errorBlue = const Color(0xFF1976D2);
+    
+    return Scaffold(
+      backgroundColor: bgColor,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              FadeInWidget(
+                child: Icon(
+                  Icons.error_outline,
+                  size: 80,
+                  color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 24),
+              FadeInWidget(
+                delay: const Duration(milliseconds: 100),
+                child: Text(
+                  'Oops! Something went wrong',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: _isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              FadeInWidget(
+                delay: const Duration(milliseconds: 200),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    _errorMessage,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _isDarkMode ? Colors.white70 : Colors.grey.shade600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
+              FadeInWidget(
+                delay: const Duration(milliseconds: 300),
+                child: InteractiveWeatherCard(
+                  backgroundColor: _isDarkMode ? errorBlue : errorBlue,
+                  enableHapticFeedback: true,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    _loadWeather();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.refresh,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Try Again',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadWeather,
-            child: const Text('Retry'),
-          ),
-        ],
+        ),
       ),
     );
   }
