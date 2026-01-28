@@ -1,38 +1,39 @@
 import 'package:flutter/material.dart';
 
 class CustomTheme {
+  // React website colors
+  static const Color darkBackground = Color(0xFF1a1d29); // Navy blue dark
+  static const Color darkCard = Color(0xFF242936); // Dark card color
+  static const Color darkBorder = Color(0xFF2d3142);
+  static const Color blueAccent = Color(0xFF3b82f6); // Blue gradient primary
+  static const Color cyanAccent = Color(0xFF06b6d4); // Cyan accent
+  
   static ThemeData lightTheme = ThemeData(
-    // Nonaktifkan Material 3 untuk kompatibilitas
     useMaterial3: false,
     
-    // Warna dasar
     primarySwatch: Colors.blue,
-    primaryColor: const Color(0xFF1976D2),
+    primaryColor: blueAccent,
     scaffoldBackgroundColor: const Color(0xFFF5F7FA),
     
-    // AppBar Theme
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       elevation: 0,
       centerTitle: true,
       backgroundColor: Colors.transparent,
       foregroundColor: Colors.black87,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         color: Colors.black87,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      iconTheme: const IconThemeData(color: Colors.black87),
+      iconTheme: IconThemeData(color: Colors.black87),
     ),
     
-    // Card Theme - HAPUS const dan gunakan properti dasar
     cardColor: Colors.white,
-    // JANGAN gunakan cardTheme, pakai cara alternatif
     
-    // Elevated Button Theme
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: blueAccent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -42,38 +43,32 @@ class CustomTheme {
   );
 
   static ThemeData darkTheme = ThemeData(
-    // Nonaktifkan Material 3
     useMaterial3: false,
     
-    // Dark mode settings
     brightness: Brightness.dark,
     primarySwatch: Colors.blue,
-    primaryColor: const Color(0xFF1976D2),
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    primaryColor: blueAccent,
+    scaffoldBackgroundColor: darkBackground, // Match React
     
-    // AppBar Theme untuk dark mode
-    appBarTheme: AppBarTheme(
+    appBarTheme: const AppBarTheme(
       elevation: 0,
       centerTitle: true,
       backgroundColor: Colors.transparent,
       foregroundColor: Colors.white,
-      titleTextStyle: const TextStyle(
+      titleTextStyle: TextStyle(
         color: Colors.white,
         fontSize: 20,
         fontWeight: FontWeight.bold,
       ),
-      iconTheme: const IconThemeData(color: Colors.white),
+      iconTheme: IconThemeData(color: Colors.white),
     ),
     
-    // Card Theme untuk dark mode
-    cardColor: const Color(0xFF2D2D2D),
-    // JANGAN gunakan cardTheme
+    cardColor: darkCard, // Match React card color
     
-    // Elevated Button Theme untuk dark mode
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,
-        backgroundColor: const Color(0xFF1976D2),
+        backgroundColor: blueAccent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
@@ -81,4 +76,29 @@ class CustomTheme {
       ),
     ),
   );
+  
+  // Helper untuk gradient colors
+  static LinearGradient getBlueGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFF3b82f6), // Blue 500
+        Color(0xFF2563eb), // Blue 600  
+        Color(0xFF0ea5e9), // Cyan 500
+      ],
+    );
+  }
+  
+  static LinearGradient getDarkBlueGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFF1e3a8a), // Dark Blue 900
+        Color(0xFF1e40af), // Blue 800
+        Color(0xFF0e7490), // Cyan 700
+      ],
+    );
+  }
 }

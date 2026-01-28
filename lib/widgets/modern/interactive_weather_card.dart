@@ -6,6 +6,8 @@ class InteractiveWeatherCard extends StatefulWidget {
   final VoidCallback? onTap;
   final Color backgroundColor;
   final bool enableHapticFeedback;
+  final double borderRadius;
+  final List<BoxShadow>? boxShadow;
 
   const InteractiveWeatherCard({
     super.key,
@@ -13,6 +15,8 @@ class InteractiveWeatherCard extends StatefulWidget {
     this.onTap,
     this.backgroundColor = Colors.white,
     this.enableHapticFeedback = true,
+    this.borderRadius = 20,
+    this.boxShadow,
   });
 
   @override
@@ -96,8 +100,8 @@ class _InteractiveWeatherCardState extends State<InteractiveWeatherCard>
             curve: Curves.easeInOut,
             decoration: BoxDecoration(
               color: widget.backgroundColor,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
+              borderRadius: BorderRadius.circular(widget.borderRadius),
+              boxShadow: widget.boxShadow ?? [
                 BoxShadow(
                   color: Colors.black.withOpacity(_isPressed ? 0.1 : 0.15),
                   blurRadius: _isPressed ? 8 : 12,

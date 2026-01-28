@@ -1,6 +1,31 @@
 import 'package:flutter/material.dart';
 
 class WeatherGradients {
+  // Main blue gradient matching React website
+  static LinearGradient getMainBlueGradient(bool isDark) {
+    if (isDark) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF1e3a8a), // Blue 900
+          Color(0xFF1e40af), // Blue 800
+          Color(0xFF0e7490), // Cyan 700
+        ],
+      );
+    } else {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF3b82f6), // Blue 500
+          Color(0xFF2563eb), // Blue 600
+          Color(0xFF0ea5e9), // Cyan 500
+        ],
+      );
+    }
+  }
+
   static LinearGradient getGradientByCondition(String condition, bool isDark) {
     final baseCondition = condition.toLowerCase();
 
@@ -13,77 +38,74 @@ class WeatherGradients {
 
   static LinearGradient _getLightGradient(String condition) {
     if (condition.contains('clear') || condition.contains('sunny')) {
-      return LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF87CEEB), // Sky blue
-          const Color(0xFF4A90E2), // Ocean blue
-          const Color(0xFF1E88E5), // Deep blue
-        ],
-        stops: const [0.0, 0.5, 1.0],
-      );
-    } else if (condition.contains('cloud')) {
-      return LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFFB0BEC5), // Light gray
-          const Color(0xFF78909C), // Medium gray
-          const Color(0xFF546E7A), // Dark gray
-        ],
-        stops: const [0.0, 0.5, 1.0],
-      );
-    } else if (condition.contains('rain') || condition.contains('drizzle')) {
-      return LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          const Color(0xFF90A4AE),
-          const Color(0xFF607D8B),
-          const Color(0xFF455A64),
-        ],
-        stops: const [0.0, 0.6, 1.0],
-      );
-    } else if (condition.contains('thunderstorm')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFF263238),
-          const Color(0xFF37474F),
-          const Color(0xFF102027),
+          Color(0xFF3b82f6), // Blue 500
+          Color(0xFF2563eb), // Blue 600
+          Color(0xFF0ea5e9), // Cyan 500
+        ],
+      );
+    } else if (condition.contains('cloud')) {
+      return const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF64748b), // Slate 500
+          Color(0xFF475569), // Slate 600
+          Color(0xFF334155), // Slate 700
+        ],
+      );
+    } else if (condition.contains('rain') || condition.contains('drizzle')) {
+      return const LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          Color(0xFF0ea5e9), // Cyan 500
+          Color(0xFF0284c7), // Cyan 600
+          Color(0xFF0369a1), // Cyan 700
+        ],
+      );
+    } else if (condition.contains('thunderstorm')) {
+      return const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          Color(0xFF4c1d95), // Purple 900
+          Color(0xFF581c87), // Purple 800
+          Color(0xFF6b21a8), // Purple 700
         ],
       );
     } else if (condition.contains('snow')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFFE3F2FD),
-          const Color(0xFFBBDEFB),
-          const Color(0xFF90CAF9),
+          Color(0xFFdbeafe), // Blue 100
+          Color(0xFFbfdbfe), // Blue 200
+          Color(0xFF93c5fd), // Blue 300
         ],
       );
     } else if (condition.contains('mist') || condition.contains('fog')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFFCFD8DC),
-          const Color(0xFFB0BEC5),
-          const Color(0xFF90A4AE),
+          Color(0xFFcbd5e1), // Slate 300
+          Color(0xFFa8b3c1), // Slate 400
+          Color(0xFF94a3b8), // Slate 400
         ],
       );
     } else {
-      // Default gradient
-      return LinearGradient(
+      // Default: Main blue gradient
+      return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFF2196F3),
-          const Color(0xFF03A9F4),
-          const Color(0xFF00BCD4),
+          Color(0xFF3b82f6), // Blue 500
+          Color(0xFF2563eb), // Blue 600
+          Color(0xFF0ea5e9), // Cyan 500
         ],
       );
     }
@@ -91,80 +113,116 @@ class WeatherGradients {
 
   static LinearGradient _getDarkGradient(String condition) {
     if (condition.contains('clear') || condition.contains('sunny')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFF0D47A1),
-          const Color(0xFF1565C0),
-          const Color(0xFF1976D2),
+          Color(0xFF1e3a8a), // Blue 900
+          Color(0xFF1e40af), // Blue 800
+          Color(0xFF0e7490), // Cyan 700
         ],
       );
     } else if (condition.contains('cloud')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF37474F),
-          const Color(0xFF263238),
-          const Color(0xFF102027),
+          Color(0xFF1e293b), // Slate 800
+          Color(0xFF0f172a), // Slate 900
+          Color(0xFF020617), // Slate 950
         ],
       );
     } else if (condition.contains('rain') || condition.contains('drizzle')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF37474F),
-          const Color(0xFF2C3E50),
-          const Color(0xFF1C2833),
+          Color(0xFF155e75), // Cyan 800
+          Color(0xFF164e63), // Cyan 900
+          Color(0xFF083344), // Cyan 950
         ],
       );
     } else if (condition.contains('thunderstorm')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFF1A237E),
-          const Color(0xFF283593),
-          const Color(0xFF303F9F),
+          Color(0xFF312e81), // Indigo 900
+          Color(0xFF3730a3), // Indigo 800
+          Color(0xFF4338ca), // Indigo 700
         ],
       );
     } else if (condition.contains('snow')) {
-      return LinearGradient(
+      return const LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
         colors: [
-          const Color(0xFF37474F),
-          const Color(0xFF455A64),
-          const Color(0xFF546E7A),
+          Color(0xFF334155), // Slate 700
+          Color(0xFF475569), // Slate 600
+          Color(0xFF64748b), // Slate 500
         ],
       );
     } else {
-      return LinearGradient(
+      // Default dark: Dark blue gradient
+      return const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          const Color(0xFF1A237E),
-          const Color(0xFF283593),
-          const Color(0xFF303F9F),
+          Color(0xFF1e3a8a), // Blue 900
+          Color(0xFF1e40af), // Blue 800
+          Color(0xFF0e7490), // Cyan 700
         ],
       );
     }
   }
 
   static Color getTextColorForBackground(LinearGradient gradient, bool isDark) {
-    if (isDark) {
-      return Colors.white;
-    }
-    
-    // For light mode, check if gradient is dark
-    final colors = gradient.colors;
-    if (colors.isNotEmpty) {
-      final firstColor = colors[0];
-      final brightness = (firstColor.red * 299 + firstColor.green * 587 + firstColor.blue * 114) / 1000;
-      return brightness > 128 ? Colors.black87 : Colors.white;
-    }
-    return Colors.black87;
+    // Always white for dark mode and gradients
+    return Colors.white;
+  }
+  
+  // Gradient untuk metric cards (seperti di React)
+  static LinearGradient getOrangeGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFFf97316), // Orange 500
+        Color(0xFFea580c), // Orange 600
+      ],
+    );
+  }
+  
+  static LinearGradient getEmeraldGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFF10b981), // Emerald 500
+        Color(0xFF059669), // Emerald 600
+      ],
+    );
+  }
+  
+  static LinearGradient getPurpleGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFFa855f7), // Purple 500
+        Color(0xFF9333ea), // Purple 600
+      ],
+    );
+  }
+  
+  static LinearGradient getCyanGradient() {
+    return const LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        Color(0xFF06b6d4), // Cyan 500
+        Color(0xFF0891b2), // Cyan 600
+      ],
+    );
   }
 }
