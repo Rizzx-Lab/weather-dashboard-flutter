@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../theme/weather_gradients.dart';
-import '../../widgets/animations/fade_in_widget.dart'; // TAMBAH INI
 
 class WeatherHeroSection extends StatelessWidget {
   final String cityName;
@@ -46,74 +45,77 @@ class WeatherHeroSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Location and date
-              FadeInWidget( // INI SUDAH BENAR
-                delay: const Duration(milliseconds: 100),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cityName,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                        shadows: [
-                          Shadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 4,
-                            offset: const Offset(1, 1),
-                          ),
-                        ],
-                      ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    cityName,
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(1, 1),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('EEEE, MMMM d').format(DateTime.now()),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: textColor.withOpacity(0.9),
-                      ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('EEEE, MMMM d').format(DateTime.now()),
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: textColor.withOpacity(0.9),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 20),
 
-              // Temperature and icon
+              // Temperature and icon - FIXED: Made responsive
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Temperature
-                  FadeInWidget( // INI SUDAH BENAR
-                    delay: const Duration(milliseconds: 200),
+                  // Temperature - FIXED: Added Flexible to prevent overflow
+                  Flexible(
+                    flex: 3,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.baseline,
-                          textBaseline: TextBaseline.alphabetic,
-                          children: [
-                            Text(
-                              temperature.round().toString(),
-                              style: TextStyle(
-                                fontSize: 72,
-                                fontWeight: FontWeight.w800,
-                                color: textColor,
-                                height: 0.9,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                temperature.round().toString(),
+                                style: TextStyle(
+                                  fontSize: 72,
+                                  fontWeight: FontWeight.w800,
+                                  color: textColor,
+                                  height: 0.9,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '°C',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w600,
-                                color: textColor.withOpacity(0.9),
+                              const SizedBox(width: 4),
+                              Text(
+                                '°C',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor.withOpacity(0.9),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -124,16 +126,20 @@ class WeatherHeroSection extends StatelessWidget {
                             letterSpacing: 1.5,
                             fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
 
-                  // Weather Icon
-                  FadeInWidget( // INI SUDAH BENAR
-                    delay: const Duration(milliseconds: 300),
+                  const SizedBox(width: 16),
+
+                  // Weather Icon - FIXED: Made smaller on mobile
+                  Flexible(
+                    flex: 2,
                     child: Container(
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.2),
                         shape: BoxShape.circle,
@@ -147,12 +153,12 @@ class WeatherHeroSection extends StatelessWidget {
                       ),
                       child: Image.network(
                         'https://openweathermap.org/img/wn/$icon@4x.png',
-                        width: 120,
-                        height: 120,
+                        width: 100,
+                        height: 100,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.wb_sunny,
-                            size: 80,
+                            size: 60,
                             color: textColor,
                           );
                         },
@@ -164,38 +170,47 @@ class WeatherHeroSection extends StatelessWidget {
 
               const SizedBox(height: 20),
 
-              // Additional info
-              FadeInWidget( // INI SUDAH BENAR
-                delay: const Duration(milliseconds: 400),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildWeatherStat(
-                      Icons.arrow_upward,
-                      '${(temperature + 5).round()}°',
-                      'High',
-                      textColor,
-                    ),
-                    _buildWeatherStat(
-                      Icons.arrow_downward,
-                      '${(temperature - 5).round()}°',
-                      'Low',
-                      textColor,
-                    ),
-                    _buildWeatherStat(
-                      Icons.water_drop,
-                      '65%',
-                      'Humidity',
-                      textColor,
-                    ),
-                    _buildWeatherStat(
-                      Icons.air,
-                      '3.2 m/s',
-                      'Wind',
-                      textColor,
-                    ),
-                  ],
-                ),
+              // Additional info - FIXED: Made responsive with GridView
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // If screen is too narrow, use 2 columns instead of 4
+                  final crossAxisCount = constraints.maxWidth < 400 ? 2 : 4;
+                  
+                  return GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    childAspectRatio: 1.5,
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    children: [
+                      _buildWeatherStat(
+                        Icons.arrow_upward,
+                        '${(temperature + 5).round()}°',
+                        'High',
+                        textColor,
+                      ),
+                      _buildWeatherStat(
+                        Icons.arrow_downward,
+                        '${(temperature - 5).round()}°',
+                        'Low',
+                        textColor,
+                      ),
+                      _buildWeatherStat(
+                        Icons.water_drop,
+                        '65%',
+                        'Humidity',
+                        textColor,
+                      ),
+                      _buildWeatherStat(
+                        Icons.air,
+                        '3.2 m/s',
+                        'Wind',
+                        textColor,
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -206,27 +221,34 @@ class WeatherHeroSection extends StatelessWidget {
 
   Widget _buildWeatherStat(IconData icon, String value, String label, Color textColor) {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           icon,
           color: textColor.withOpacity(0.9),
-          size: 22,
-        ),
-        const SizedBox(height: 6),
-        Text(
-          value,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          size: 20,
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: textColor.withOpacity(0.7),
-            fontSize: 12,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            value,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 2),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: textColor.withOpacity(0.7),
+              fontSize: 11,
+            ),
           ),
         ),
       ],

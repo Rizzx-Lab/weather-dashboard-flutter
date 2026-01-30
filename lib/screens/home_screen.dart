@@ -9,8 +9,6 @@ import '../widgets/modern/hourly_forecast_chart.dart';
 import '../widgets/modern/forecast_summary_card.dart';
 import '../widgets/modern/weather_analytics_widget.dart';
 import '../widgets/modern/interactive_weather_card.dart';
-import '../widgets/animations/fade_in_widget.dart';
-import '../widgets/animations/shimmer_loading.dart';
 import '../widgets/air_quality_card.dart';
 import '../widgets/weather_map_card.dart';
 import '../widgets/improved_weather_details.dart';
@@ -24,7 +22,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> {
   final WeatherService _weatherService = WeatherService();
   final LocationService _locationService = LocationService();
   final StorageService _storageService = StorageService();
@@ -38,32 +36,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   String _errorMessage = '';
   bool _isDarkMode = false;
 
-  late AnimationController _refreshController;
-
   @override
   void initState() {
     super.initState();
-    
-    _refreshController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-
     _loadDarkMode();
     _loadWeather();
   }
 
-  @override
-  void dispose() {
-    _refreshController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadDarkMode() async {
     final darkMode = await _storageService.getDarkMode();
-    setState(() {
-      _isDarkMode = darkMode;
-    });
+    if (mounted) {
+      setState(() {
+        _isDarkMode = darkMode;
+      });
+    }
   }
 
   Future<void> _loadWeather({bool showRefresh = false}) async {
@@ -105,22 +91,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _weatherService.getAirQuality(lat, lon),
       ]);
 
-      setState(() {
-        _currentWeather = results[0] as WeatherData;
-        _hourlyForecast = results[1] as List<HourlyForecast>;
-        _dailyForecast = results[2] as List<DailyForecast>;
-        _airQuality = results[3] as AirQuality?;
-        _isLoading = false;
-        _isRefreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentWeather = results[0] as WeatherData;
+          _hourlyForecast = results[1] as List<HourlyForecast>;
+          _dailyForecast = results[2] as List<DailyForecast>;
+          _airQuality = results[3] as AirQuality?;
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
 
       HapticFeedback.lightImpact();
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load weather data: ${e.toString()}';
-        _isLoading = false;
-        _isRefreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load weather data: ${e.toString()}';
+          _isLoading = false;
+          _isRefreshing = false;
+        });
+      }
       
       HapticFeedback.mediumImpact();
     }
@@ -141,20 +131,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       await _storageService.saveLastLocation(lat, lon);
 
-      setState(() {
-        _currentWeather = results[0] as WeatherData;
-        _hourlyForecast = results[1] as List<HourlyForecast>;
-        _dailyForecast = results[2] as List<DailyForecast>;
-        _airQuality = results[3] as AirQuality?;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentWeather = results[0] as WeatherData;
+          _hourlyForecast = results[1] as List<HourlyForecast>;
+          _dailyForecast = results[2] as List<DailyForecast>;
+          _airQuality = results[3] as AirQuality?;
+          _isLoading = false;
+        });
+      }
 
       HapticFeedback.lightImpact();
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load weather data';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load weather data';
+          _isLoading = false;
+        });
+      }
       HapticFeedback.mediumImpact();
     }
   }
@@ -183,15 +177,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lon: _currentWeather!.lon,
         country: '',
       ));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Location removed from favorites'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Location removed from favorites'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
-      );
+        );
+      }
     } else {
       await _storageService.addLocation(SavedLocation(
         name: _currentWeather!.cityName,
@@ -199,17 +195,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         lon: _currentWeather!.lon,
         country: '',
       ));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Location added to favorites'),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Location added to favorites'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
-    setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   Widget _buildLoadingScreen() {
@@ -218,102 +218,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: bgColor,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+        child: Center(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ShimmerLoading(
-                        width: 200,
-                        height: 32,
-                        borderRadius: BorderRadius.circular(8),
-                        baseColor: Colors.white.withOpacity(0.2),
-                        highlightColor: Colors.white.withOpacity(0.4),
-                      ),
-                      const SizedBox(height: 8),
-                      ShimmerLoading(
-                        width: 150,
-                        height: 16,
-                        borderRadius: BorderRadius.circular(4),
-                        baseColor: Colors.white.withOpacity(0.2),
-                        highlightColor: Colors.white.withOpacity(0.4),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      ShimmerLoading(
-                        width: 40,
-                        height: 40,
-                        borderRadius: BorderRadius.circular(20),
-                        baseColor: Colors.white.withOpacity(0.2),
-                        highlightColor: Colors.white.withOpacity(0.4),
-                      ),
-                      const SizedBox(width: 12),
-                      ShimmerLoading(
-                        width: 40,
-                        height: 40,
-                        borderRadius: BorderRadius.circular(20),
-                        baseColor: Colors.white.withOpacity(0.2),
-                        highlightColor: Colors.white.withOpacity(0.4),
-                      ),
-                    ],
-                  ),
-                ],
+              const CircularProgressIndicator(
+                color: Color(0xFF3b82f6),
               ),
-
-              const SizedBox(height: 40),
-
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.white.withOpacity(0.1),
-                      Colors.white.withOpacity(0.05),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ShimmerLoading(
-                          width: 120,
-                          height: 48,
-                          borderRadius: BorderRadius.circular(8),
-                          baseColor: Colors.white.withOpacity(0.2),
-                          highlightColor: Colors.white.withOpacity(0.4),
-                        ),
-                        const SizedBox(height: 12),
-                        ShimmerLoading(
-                          width: 180,
-                          height: 24,
-                          borderRadius: BorderRadius.circular(4),
-                          baseColor: Colors.white.withOpacity(0.2),
-                          highlightColor: Colors.white.withOpacity(0.4),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    ShimmerLoading(
-                      width: 100,
-                      height: 100,
-                      borderRadius: BorderRadius.circular(50),
-                      baseColor: Colors.white.withOpacity(0.2),
-                      highlightColor: Colors.white.withOpacity(0.4),
-                    ),
-                  ],
+              const SizedBox(height: 24),
+              Text(
+                'Loading weather data...',
+                style: TextStyle(
+                  color: _isDarkMode ? Colors.white70 : Colors.black54,
+                  fontSize: 16,
                 ),
               ),
             ],
@@ -412,8 +329,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   children: [
                     // Main Weather Card
                     if (_currentWeather != null)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 100),
+                      RepaintBoundary(
                         child: AdvancedWeatherCard(
                           weather: _currentWeather!,
                           isDarkMode: _isDarkMode,
@@ -424,8 +340,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Air Quality
                     if (_airQuality != null)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 200),
+                      RepaintBoundary(
                         child: InteractiveWeatherCard(
                           backgroundColor: _isDarkMode ? const Color(0xFF242936) : Colors.white,
                           child: AirQualityCard(
@@ -440,8 +355,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Hourly Forecast Chart (24 jam)
                     if (_hourlyForecast.isNotEmpty)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 300),
+                      RepaintBoundary(
                         child: HourlyForecastChart(
                           forecasts: _hourlyForecast,
                           isDarkMode: _isDarkMode,
@@ -452,8 +366,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Summary 24 Jam (4 cards)
                     if (_hourlyForecast.isNotEmpty)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 400),
+                      RepaintBoundary(
                         child: ForecastSummaryCard(
                           hourlyForecasts: _hourlyForecast,
                           isDarkMode: _isDarkMode,
@@ -464,8 +377,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Weather Analytics (Charts)
                     if (_hourlyForecast.isNotEmpty && _dailyForecast.isNotEmpty)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 500),
+                      RepaintBoundary(
                         child: WeatherAnalyticsWidget(
                           hourlyForecasts: _hourlyForecast,
                           dailyForecasts: _dailyForecast,
@@ -477,8 +389,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Weather Details
                     if (_currentWeather != null)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 600),
+                      RepaintBoundary(
                         child: ImprovedWeatherDetails(
                           weather: _currentWeather!,
                           isDarkMode: _isDarkMode,
@@ -489,8 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
                     // Weather Map
                     if (_currentWeather != null)
-                      FadeInWidget(
-                        delay: const Duration(milliseconds: 700),
+                      RepaintBoundary(
                         child: WeatherMapCard(
                           lat: _currentWeather!.lat,
                           lon: _currentWeather!.lon,
@@ -532,18 +442,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               heroTag: 'refresh',
               onPressed: () => _loadWeather(showRefresh: true),
               backgroundColor: _isDarkMode ? const Color(0xFF3b82f6) : Colors.white,
-              child: AnimatedBuilder(
-                animation: _refreshController,
-                builder: (context, child) {
-                  return Transform.rotate(
-                    angle: _isRefreshing ? _refreshController.value * 6.28 : 0,
-                    child: Icon(
-                      _isRefreshing ? Icons.refresh : Icons.my_location,
+              child: _isRefreshing
+                  ? SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _isDarkMode ? Colors.white : const Color(0xFF3b82f6),
+                      ),
+                    )
+                  : Icon(
+                      Icons.my_location,
                       color: _isDarkMode ? Colors.white : const Color(0xFF3b82f6),
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),

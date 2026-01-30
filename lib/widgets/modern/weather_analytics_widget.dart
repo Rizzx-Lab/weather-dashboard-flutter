@@ -54,33 +54,40 @@ class WeatherAnalyticsWidget extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3b82f6), Color(0xFF06b6d4)],
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3b82f6), Color(0xFF06b6d4)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      borderRadius: BorderRadius.circular(12),
+                      child: const Icon(
+                        Icons.analytics,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.analytics,
-                      color: Colors.white,
-                      size: 20,
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Text(
+                        'Analisis Cuaca',
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Analisis Cuaca',
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
@@ -101,97 +108,111 @@ class WeatherAnalyticsWidget extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Charts Grid
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 16,
-            crossAxisSpacing: 16,
-            childAspectRatio: 1.0,
-            children: [
-              // Temperature Trend Chart
-              _buildChartCard(
-                'Tren Suhu 24 Jam',
-                Icons.thermostat,
-                const Color(0xFF3b82f6),
-                _buildTemperatureChart(hourlyData, gridColor),
-                isDarkMode,
-              ),
+          // Charts Grid - FIXED: Made responsive with LayoutBuilder
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Auto-adjust columns based on screen width
+              final crossAxisCount = constraints.maxWidth < 600 ? 1 : 2;
+              final aspectRatio = constraints.maxWidth < 600 ? 1.2 : 1.0;
 
-              // Daily Forecast Bar Chart
-              _buildChartCard(
-                'Prakiraan 5 Hari',
-                Icons.calendar_today,
-                const Color(0xFFf59e0b),
-                _buildDailyForecastChart(dailyData, gridColor),
-                isDarkMode,
-              ),
+              return GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: aspectRatio,
+                children: [
+                  // Temperature Trend Chart
+                  _buildChartCard(
+                    'Tren Suhu 24 Jam',
+                    Icons.thermostat,
+                    const Color(0xFF3b82f6),
+                    _buildTemperatureChart(hourlyData, gridColor),
+                    isDarkMode,
+                  ),
 
-              // Humidity Pie Chart
-              _buildChartCard(
-                'Distribusi Kelembaban',
-                Icons.water_drop,
-                const Color(0xFF10b981),
-                _buildHumidityPieChart(),
-                isDarkMode,
-              ),
+                  // Daily Forecast Bar Chart
+                  _buildChartCard(
+                    'Prakiraan 5 Hari',
+                    Icons.calendar_today,
+                    const Color(0xFFf59e0b),
+                    _buildDailyForecastChart(dailyData, gridColor),
+                    isDarkMode,
+                  ),
 
-              // Pressure Line Chart
-              _buildChartCard(
-                'Tekanan Atmosfer',
-                Icons.speed,
-                const Color(0xFFa855f7),
-                _buildPressureChart(hourlyData, gridColor),
-                isDarkMode,
-              ),
-            ],
+                  // Humidity Pie Chart
+                  _buildChartCard(
+                    'Distribusi Kelembaban',
+                    Icons.water_drop,
+                    const Color(0xFF10b981),
+                    _buildHumidityPieChart(),
+                    isDarkMode,
+                  ),
+
+                  // Pressure Line Chart
+                  _buildChartCard(
+                    'Tekanan Atmosfer',
+                    Icons.speed,
+                    const Color(0xFFa855f7),
+                    _buildPressureChart(hourlyData, gridColor),
+                    isDarkMode,
+                  ),
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 24),
 
-          // Summary Metrics
-          GridView.count(
-            crossAxisCount: 4,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.3,
-            children: [
-              _buildMetricCard(
-                'Rata-rata Suhu',
-                '${avgTemp.round()}°C',
-                Icons.thermostat,
-                const Color(0xFF3b82f6),
-                0.7,
-                isDarkMode,
-              ),
-              _buildMetricCard(
-                'Kelembaban Max',
-                '$maxHumidity%',
-                Icons.water_drop,
-                const Color(0xFF10b981),
-                maxHumidity / 100,
-                isDarkMode,
-              ),
-              _buildMetricCard(
-                'Rentang Tekanan',
-                '$pressureRange hPa',
-                Icons.trending_up,
-                const Color(0xFFa855f7),
-                0.6,
-                isDarkMode,
-              ),
-              _buildMetricCard(
-                'Data Points',
-                '${hourlyForecasts.length}',
-                Icons.analytics,
-                const Color(0xFFf97316),
-                0.8,
-                isDarkMode,
-              ),
-            ],
+          // Summary Metrics - FIXED: Made responsive
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth < 600 ? 2 : 4;
+              
+              return GridView.count(
+                crossAxisCount: crossAxisCount,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 12,
+                childAspectRatio: 1.2,
+                children: [
+                  _buildMetricCard(
+                    'Rata-rata Suhu',
+                    '${avgTemp.round()}°C',
+                    Icons.thermostat,
+                    const Color(0xFF3b82f6),
+                    0.7,
+                    isDarkMode,
+                  ),
+                  _buildMetricCard(
+                    'Kelembaban Max',
+                    '$maxHumidity%',
+                    Icons.water_drop,
+                    const Color(0xFF10b981),
+                    maxHumidity / 100,
+                    isDarkMode,
+                  ),
+                  _buildMetricCard(
+                    'Rentang Suhu',
+                    '$pressureRange°C',
+                    Icons.trending_up,
+                    const Color(0xFFa855f7),
+                    0.6,
+                    isDarkMode,
+                  ),
+                  _buildMetricCard(
+                    'Data Points',
+                    '${hourlyForecasts.length}',
+                    Icons.analytics,
+                    const Color(0xFFf97316),
+                    0.8,
+                    isDarkMode,
+                  ),
+                ],
+              );
+            },
           ),
 
           const SizedBox(height: 16),
@@ -204,6 +225,7 @@ class WeatherAnalyticsWidget extends StatelessWidget {
                 color: textColor.withOpacity(0.5),
                 fontSize: 11,
               ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
@@ -434,7 +456,7 @@ class WeatherAnalyticsWidget extends StatelessWidget {
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 10,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -442,12 +464,16 @@ class WeatherAnalyticsWidget extends StatelessWidget {
             ],
           ),
           const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: 6),
